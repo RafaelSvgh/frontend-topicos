@@ -3,16 +3,16 @@ import 'package:http/http.dart' as http;
 
 // 192.168.0.15
 class DeepSeekService {
-  final String baseUrl = 'http://10.0.2.2:5000';
+  final String baseUrl = 'http://192.168.0.14:5000';
 
   Future<String> getChatResponse(String prompt) async {
-    final url = Uri.parse("$baseUrl/chat");
+    final url = Uri.parse("$baseUrl/qa");
 
     try {
       final response = await http.post(
         url,
         headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"prompt": prompt}),
+        body: jsonEncode({"question": prompt}),
       );
 
       if (response.statusCode == 200) {
@@ -23,7 +23,7 @@ class DeepSeekService {
         return "Error en el servidor";
       }
     } catch (e) {
-      return "No se pudo conectar con el servidor";
+      return "No se pudo conectar con el servidor, nicagandooooooo";
     }
   }
 }

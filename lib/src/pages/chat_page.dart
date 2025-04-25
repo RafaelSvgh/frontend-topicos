@@ -16,10 +16,34 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  List<Message> messages = [];
+  List<Message> messages = [
+    Message(
+      'Hola, soy tu asistente legal. ¿En qué puedo ayudarte hoy?',
+      DateTime.now(),
+      false,
+    ),
+    Message(
+      '¿Tienes alguna pregunta legal específica?',
+      DateTime.now(),
+      true,
+    ),
+    Message(
+      'Recuerda que no soy un abogado, pero puedo ofrecerte información general asdas asdasdasd asdasdasd asdqweqwdqkm asdpoewmflmvcjnqou.',
+      DateTime.now(),
+      false,
+    ),
+    Message(
+      'Si tienes una consulta legal, por favor, házmelo saber.',
+      DateTime.now(),
+      true,
+    ),
+  ];
 
   final TextEditingController _controller = TextEditingController();
+  double _micOffset = 0.0;
   bool isMicOn = false;
+  bool _isSpeaking = false;
+  String? _speakingMessageText;
   final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(30),
       borderSide: const BorderSide(style: BorderStyle.none));
@@ -34,6 +58,12 @@ class _ChatPageState extends State<ChatPage> {
   void initState() {
     super.initState();
     _speechService.initSpeech();
+    _ttsService.onSpeakingStateChanged = (isSpeaking) {
+      setState(() {
+        _isSpeaking = isSpeaking;
+        if (!isSpeaking) _speakingMessageText = null;
+      });
+    };
   }
 
   void _onSpeechResult(SpeechRecognitionResult result) {
@@ -41,12 +71,17 @@ class _ChatPageState extends State<ChatPage> {
       _lastWords = result.recognizedWords;
       _controller.text = _lastWords;
     });
-    if (!_speechService.isListening) {
-      _sendMessageVoice(_lastWords);
-    }
+    // if (!_speechService.isListening) {
+    //   _sendMessageVoice(_lastWords);
+    // }
   }
 
   void _sendMessageVoice(String text) async {
+    _controller.clear();
+    _micOffset = 0.0;
+    setState(() {
+      isMicOn = false;
+    });
     final message = Message(text, DateTime.now(), true);
     setState(() {
       messages.add(message);
@@ -60,7 +95,6 @@ class _ChatPageState extends State<ChatPage> {
     });
     print(_response);
     _ttsService.speak(_response);
-    _controller.clear();
   }
 
   void _sendMessageText() async {
@@ -81,13 +115,35 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat App'),
-        backgroundColor: Colors.blue,
+      appBar: _appBar(theme),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+              ),
+              child: const Text(
+                'DeepSeek',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Configuración'),
+              onTap: () {
+                // Acción al seleccionar la opción de configuración
+              },
+            ),
+          ],
+        ),
       ),
-      floatingActionButton: isMicOn ? _floatingActionButton() : null,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       body: Column(
         children: [
           Expanded(
@@ -107,12 +163,12 @@ class _ChatPageState extends State<ChatPage> {
               height: 40,
               child: Center(
                 child: Card(
-                  color: Theme.of(context).primaryColor,
+                  color: theme.colorScheme.secondary,
                   child: Padding(
                     padding: const EdgeInsets.all(8),
                     child: Text(
                       DateFormat.yMd().format(message.date),
-                      style: const TextStyle(color: Colors.white),
+                      style: theme.textTheme.bodyMedium,
                     ),
                   ),
                 ),
@@ -126,85 +182,169 @@ class _ChatPageState extends State<ChatPage> {
                 elevation: 8,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.5,
+                    maxWidth: !message.isSendByMe
+                        ? MediaQuery.of(context).size.width * 0.9
+                        : MediaQuery.of(context).size.width * 0.7,
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(message.text),
+                  child: Column(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: message.isSendByMe
+                              ? theme.colorScheme.secondary
+                              : theme.colorScheme.surface,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(20),
+                            topRight: const Radius.circular(20),
+                            bottomLeft: message.isSendByMe
+                                ? const Radius.circular(20)
+                                : const Radius.circular(0),
+                            bottomRight: message.isSendByMe
+                                ? const Radius.circular(0)
+                                : const Radius.circular(20),
+                          ),
+                        ),
+                        padding: const EdgeInsets.all(12),
+                        margin: const EdgeInsets.only(top: 15),
+                        child: Text(
+                          message.text,
+                          style: theme.textTheme.bodyLarge,
+                          textAlign: TextAlign.left,
+                        ),
+                      ),
+                      if (!message.isSendByMe)
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                if (_isSpeaking) {
+                                  _ttsService.stop();
+                                  setState(() {
+                                    _speakingMessageText = null;
+                                  });
+                                } else {
+                                  setState(() {
+                                    _speakingMessageText = message.text;
+                                  });
+                                  _ttsService.speak(message.text);
+                                }
+                              },
+                              icon: Icon(
+                                _isSpeaking &&
+                                        _speakingMessageText == message.text
+                                    ? Icons.stop
+                                    : Icons.volume_up_outlined,
+                              ),
+                            ),
+                            IconButton(
+                                onPressed: () {}, icon: const Icon(Icons.copy)),
+                          ],
+                        )
+                    ],
                   ),
                 ),
               ),
             ),
           )),
           Container(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+            margin: const EdgeInsets.only(left: 4, right: 4, bottom: 4),
+            height: 110,
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            decoration: BoxDecoration(
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20)),
+                color: theme.colorScheme.secondary),
+            child: Column(
               children: [
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black
-                              .withOpacity(0.2), // Color de la sombra
-                          blurRadius: 10, // Desenfoque (blur)
-                          spreadRadius: 2, // Expansión de la sombra
-                          offset: const Offset(0, 4), // Dirección de la sombra
-                        ),
-                      ],
-                    ),
-                    child: TextFormField(
-                      controller: _controller,
-                      decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          enabledBorder: border,
-                          contentPadding: const EdgeInsets.all(12),
-                          hintText: 'Escribe un mensaje',
-                          hintStyle: TextStyle(color: Colors.grey.shade500)),
-                    ),
+                TextField(
+                  controller: _controller,
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: theme.colorScheme.secondary,
+                    enabledBorder: border,
+                    focusedBorder: border,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+                    hintText: 'Pregunta lo que quieras',
+                    hintStyle:
+                        const TextStyle(color: Colors.white54, fontSize: 18),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: CircleAvatar(
-                    backgroundColor: Colors.blue,
-                    radius: 22,
-                    child: IconButton(
-                      icon: const Icon(
-                        Icons.send,
-                        color: Colors.white,
-                        size: 26,
-                      ),
-                      onPressed: _sendMessageText, // Enviar con el botón
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                    onLongPressStart: (details) {
-                      _speechService.startListening(_onSpeechResult);
-                      setState(() {
-                        isMicOn = true;
-                      });
-                    },
-                    onLongPressEnd: (details) {
-                      _speechService.stopListening;
-                      setState(() {
-                        isMicOn = false;
-                      });
-                    },
-                    child: CircleAvatar(
-                      child: Icon(
-                        Icons.mic,
-                        color: Colors.white,
-                        size: 28,
-                      ),
-                      backgroundColor: Colors.blue,
-                      radius: 22,
-                    )),
+                !isMicOn
+                    ? Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                              onPressed: () {},
+                              icon: Icon(
+                                Icons.add,
+                                color: theme.textTheme.bodyLarge?.color,
+                                size: 32,
+                              )),
+                          GestureDetector(
+                            onVerticalDragUpdate: (details) {
+                              setState(() {
+                                _micOffset += details.delta.dy;
+                                if (_micOffset < -100) {
+                                  // Aquí puedes activar la grabación o mostrar un mensaje de "Desliza para cancelar"
+                                  _speechService
+                                      .startListening(_onSpeechResult);
+                                  setState(() {
+                                    isMicOn = true;
+                                  });
+                                }
+                              });
+                            },
+                            child: Transform.translate(
+                              offset: Offset(0, _micOffset),
+                              child: Icon(
+                                Icons.mic,
+                                color: theme.textTheme.bodyLarge?.color,
+                                size: 32,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          IconButton(
+                              onPressed: () {
+                                setState(() {
+                                  isMicOn = false;
+                                  _micOffset = 0.0;
+                                });
+                              },
+                              icon: Icon(
+                                Icons.close,
+                                color: theme.textTheme.bodyLarge?.color,
+                                size: 32,
+                              )),
+                          Lottie.asset(
+                            'assets/voice.json',
+                            width: 50,
+                            height: 50,
+                            repeat: true,
+                          ),
+                          IconButton(
+                              onPressed: () {
+                                _speechService.stopListening;
+                                _sendMessageVoice(_lastWords);
+                                setState(() {
+                                  isMicOn = false;
+                                });
+                              },
+                              icon: Icon(
+                                Icons.check,
+                                color: theme.textTheme.bodyLarge?.color,
+                                size: 32,
+                              )),
+                        ],
+                      )
               ],
             ),
           ),
@@ -213,11 +353,31 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  FloatingActionButton _floatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {},
-      backgroundColor: Colors.white,
-      child: LottieBuilder.asset('assets/mic.json'),
+  AppBar _appBar(ThemeData theme) {
+    return AppBar(
+      title: const Text(
+        'Asesor Legal',
+        style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+      ),
+      backgroundColor: theme.colorScheme.surface,
+      centerTitle: true,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(0.5),
+        child: Container(
+          color: Colors.grey.withAlpha(100),
+          height: 1,
+        ),
+      ),
+      elevation: 1,
+      actions: [
+        IconButton(
+          icon: const Icon(
+            Icons.chat_bubble_outline,
+            size: 24,
+          ),
+          onPressed: () {},
+        ),
+      ],
     );
   }
 }
