@@ -1,0 +1,43 @@
+{
+    "sistema": {
+      "modulo1": {
+        "submodulo1.1": "Funcionalidad principal del módulo 1",
+        "submodulo1.2": {
+          "componente1.2.1": "Configuración básica",
+          "componente1.2.2": "Opciones avanzadas"
+        }
+      },
+      "modulo2": {
+        "submodulo2.1": "Autenticación y seguridad",
+        "submodulo2.2": {
+          "componente2.2.1": "Gestión de usuarios",
+          "componente2.2.2": "Permisos y roles",
+          "componente2.2.3": "Registro de actividades"
+        },
+        "submodulo2.3": "Integración con terceros"
+      },
+      "modulo3": {
+        "submodulo3.1": "Reportes y analytics",
+        "submodulo3.2": {
+          "componente3.2.1": "Dashboard principal",
+          "componente3.2.2": "Exportación de datos"
+        }
+      }
+    },
+    "configuracion": {
+      "general": {
+        "idioma": "español",
+        "zona_horaria": "UTC-5"
+      },
+      "red": {
+        "proxy": {
+          "habilitado": false,
+          "configuracion": "ninguna"
+        },
+        "conexiones": {
+          "maximas": 50,
+          "timeout": 30
+        }
+      }
+    }
+  }

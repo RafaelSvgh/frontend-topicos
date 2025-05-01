@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 // 192.168.0.15
-class DeepSeekService {
+class GptService {
   final String baseUrl = 'http://192.168.0.14:5000';
 
   Future<String> getChatResponse(String prompt) async {
