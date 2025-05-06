@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 final goRouter = GoRouter(
-    initialLocation: '/ia-chat',
+    initialLocation: '/',
     errorBuilder: (_, __) => const Scaffold(
           body: Center(
             child: Text('Error'),

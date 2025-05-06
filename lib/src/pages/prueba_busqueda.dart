@@ -1,40 +1,16 @@
-import 'dart:convert';
+import 'package:chat_app/base_dato_hepler.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 
 class LeyesSearchPage extends StatefulWidget {
+  LeyesSearchPage({super.key});
+
   @override
+  // ignore: library_private_types_in_public_api
   _LeyesSearchPageState createState() => _LeyesSearchPageState();
 }
 
 class _LeyesSearchPageState extends State<LeyesSearchPage> {
-  List<String> _particiones = [];
-  List<String> _resultados = [];
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _loadLeyes();
-  }
-
-  Future<void> _loadLeyes() async {
-    final data = await rootBundle.loadString('assets/leyes.json');
-    final json = jsonDecode(data);
-    setState(() {
-      _particiones = List<String>.from(json['particiones']);
-      _resultados = _particiones;
-    });
-  }
-
-  void _buscar(String query) {
-    setState(() {
-      _query = query;
-      _resultados = _particiones
-          .where((ley) => ley.toLowerCase().contains(query.toLowerCase()))
-          .toList();
-    });
-  }
+  BaseDatoHepler baseDatoHepler = BaseDatoHepler();
 
   @override
   Widget build(BuildContext context) {
@@ -42,25 +18,11 @@ class _LeyesSearchPageState extends State<LeyesSearchPage> {
       appBar: AppBar(title: Text('Buscar Leyes')),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Buscar...',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: _buscar,
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _resultados.length,
-              itemBuilder: (context, i) => ListTile(
-                title: Text(_resultados[i],
-                    maxLines: 3, overflow: TextOverflow.ellipsis),
-              ),
-            ),
-          ),
+          TextButton(
+              onPressed: () async {
+                await baseDatoHepler.insertUsuario('Juan Perez');
+              },
+              child: Text('Insertar')),
         ],
       ),
     );
